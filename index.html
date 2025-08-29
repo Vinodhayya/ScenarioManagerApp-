@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Scenario Manager App — Firestore</title>
+<style>
+:root{
+--bg:#eef3ff;
+--panel:#ffffff;
+--ink:#1b2533;
+--muted:#708099;
+--blue:#1a73e8;
+--blue-600:#155ab6;
+--green:#2fb057;
+--green-700:#248a44;
+--red:#e94e4e;
+--red-700:#c33a3a;
+--amber:#f4b400;
+--ring:rgba(26,115,232,.18);
+--card:#f8fbff;
+}
+/* Base */
+html,body{height:100%}
+body{
+margin:0;
+background:var(--bg);
+color:var(--ink);
+font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+}
+h1,h2,h3{margin:0 0 12px}
+p{margin:0 0 10px}
+.row{display:flex;gap:12px;align-items:center}
+.col{display:flex;flex-direction:column;gap:8px}
+.hidden{display:none !important}
+
+/* Inputs */
+input,select,textarea{
+width:100%;
+box-sizing:border-box;
+font:inherit;
+padding:10px 12px;
+border:1.5px solid #c9d4ff;
+border-radius:10px;
+background:#fff;
+outline:none;
+}
+input:focus,select:focus,textarea:focus{
+border-color:var(--blue);
+box-shadow:0 0 0 4px var(--ring);
+}
+textarea{min-height:110px;resize:vertical}
+
+/* Buttons */
+.btn{cursor:pointer;border:0;border-radius:12px;font-weight:800;padding:10px 14px;transition:transform .08s ease, background-color .15s ease, opacity .2s}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-600)}
+.btn-success{background:var(--green);color:#fff}
+.btn-success:hover{background:var(--green-700)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover{background:var(--red-700)}
+.btn-amber{background:var(--amber);color:#212529}
+.btn-outline{background:#fff;border:1.5px solid #b0bfff}
+.btn-outline:hover{background:#f0f7ff}
+.btn-sm{padding:6px 10px;border-radius:10px}
+.btn-xs{padding:5px 8px;border-radius:9px;font-size:.88rem}
+
+/* Tabs */
+.tabs{display:flex;background:var(--blue);position:sticky;top:0;z-index:10}
+.tab{flex:1;text-align:center;padding:14px 0;color:#fff;font-weight:900;cursor:pointer;user-select:none}
+.tab.active{background:var(--blue-600);border-bottom:3px solid #fff}
+.wrap{max-width:1200px;margin:22px auto 42px;background:var(--panel);border-radius:18px;padding:22px 26px;box-shadow:0 16px 36px rgba(16,33,77,.12)}
+
+/* Cards / grids */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:stretch}
+.card{background:var(--card);border-radius:16px;padding:16px 18px;box-shadow:0 8px 22px rgba(0,0,0,.08)}
+.card-title{font-weight:900;margin-bottom:6px}
+.muted{color:var(--muted);font-size:.95rem}
+
+/* Scenario chips */
+    .chip{font-weight:800;border-radius:999px;padding:6px 10px;display:inline-flex;align-items:center;gap:8px}
+.chip.pass{background:#34a853;color:#fff}
+.chip.fail{background:#e94e4e;color:#fff}
+.chip.not-produced{background:#a8d08d;color:#1b2533}
+.chip.not-watched{background:#f4cccc;color:#1b2533}
+
+/* Tables */
+.twrap{overflow:auto;border:1px solid #e6ebff;border-radius:12px;background:#fbfdff}
+table{width:100%;border-collapse:collapse}
+thead th{position:sticky;top:0;background:var(--blue);color:#fff;padding:12px;text-align:left}
+tbody td{padding:10px 12px;border-bottom:1px solid #eef2ff}
+tbody tr:nth-child(even){background:#f9fbff}
+tbody tr:hover{background:#f0f7ff}
+
+/* Toolbar */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 16px}
+
+/* Modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(2,8,23,.46);display:none;align-items:center;justify-content:center;z-index:50}
+.modal{width:min(780px,92vw);max-height:88vh;overflow:auto;background:#fff;border-radius:18px;padding:18px 18px 20px;box-shadow:0 24px 60px rgba(0,0,0,.28);animation:pop .12s ease}
+.modal header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.modal h3{margin:0}
+.modal .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.modal .footer{display:flex;gap:12px;justify-content:flex-end;margin-top:14px}
+@keyframes pop{from{transform:scale(.98);opacity:.6}to{transform:scale(1);opacity:1}}
+
+/* Image preview */
+    .preview{border:1px dashed #cbd6ff;border-radius:14px;padding:10px;display:flex;align-items:center;gap:12px}
+.preview img{max-width:180px;max-height:140px;border-radius:8px}
+
+/* Toast */
+    .toast{position:fixed;right:18px;bottom:18px;background:#101828;color:#fff;padding:10px 14px;border-radius:12px;box-shadow:0 10px 26px rgba(0,0,0,.22);opacity:0;transform:translateY(8px);transition:all .18s ease;z-index:60}
+.toast.show{opacity:1;transform:translateY(0)}
+/* small helpers */
+.grid{display:grid;gap:10px}
+.grid.cols-2{grid-template-columns:1fr 1fr}
+</style>
+</head>
+<body>
+<!-- Tabs -->
+<div class="tabs">
+<div class="tab active" data-tab="addview">Add / View</div>
+<div class="tab" data-tab="report">Report</div>
+<div class="tab" data-tab="config">Scenario Config</div>
+</div>
+
+<div class="wrap">
+<!-- ADD / VIEW -->
+<section id="tab-addview">
+<h2>Daily Scenarios</h2>
+<div class="toolbar">
+<input type="date" id="pickDate"/>
+<button class="btn btn-success" id="btnAddScenario">Add Scenario</button>
+<button class="btn btn-primary" id="btnRefresh">Refresh</button>
+</div>
+<div id="dayInfo" class="muted"></div>
+<div id="cardsDay" class="cards" style="margin-top:10px"></div>
+</section>
+<!-- REPORT -->
+<section id="tab-report" class="hidden">
+<h2>Report</h2>
+<div class="toolbar">
+<input type="date" id="fromDate"/>
+<input type="date" id="toDate"/>
+<button class="btn btn-primary" id="btnRunReport">Run</button>
+</div>
+<div class="cards">
+<div class="card">
+<div class="card-title">Summary</div>
+<div class="twrap" id="tblSummary"></div>
+</div>
+<div class="card">
+<div class="card-title">Scenario Wise</div>
+<div class="twrap" id="tblScenarioWise"></div>
+</div>
+</div>
+<div class="card" style="margin-top:16px">
+<div class="card-title">Detailed</div>
+<div class="twrap" id="tblDetailed"></div>
+</div>
+</section>
+<!-- CONFIG -->
+<section id="tab-config" class="hidden">
+<h2>Scenario Configuration</h2>
+<div class="card">
+<div class="grid">
+<div>
+<label>Title</label>
+<input id="cfgTitle" placeholder="Scenario title"/>
+</div>
+<div>
+<label>Description</label>
+<input id="cfgDesc" placeholder="Short description"/>
+</div>
+</div>
+<div class="row" style="margin-top:10px">
+<button class="btn btn-primary btn-sm" id="btnManageRules">Manage Rules</button>
+<button class="btn btn-success" id="btnSaveConfig">Save Config</button>
+</div>
+</div>
+<div class="toolbar" style="margin-top:14px">
+<input id="cfgSearch" placeholder="Search scenario..."/>
+<button class="btn btn-primary" id="btnReloadConfig">Reload</button>
+</div>
+<div id="cfgCards" class="cards"></div>
+</section>
+</div>
+<!-- MODALS -->
+<div id="modalBackdrop" class="modal-backdrop">
+<div class="modal" role="dialog" aria-modal="true" id="modalShell">
+<header>
+<h3 id="modalTitle">Modal</h3>
+<button class="btn btn-outline btn-xs" id="btnCloseModal">Close</button>
+</header>
+<div id="modalBody"></div>
+<div class="footer" id="modalFooter"></div>
+</div>
+</div>
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+<!-- Firebase (module) -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+getFirestore, collection, getDocs, addDoc, doc, setDoc, updateDoc,
+deleteDoc, query, where, orderBy
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+/* ===== Firebase Config (provided) ===== */
+const firebaseConfig = {
+apiKey: "AIzaSyBIlTd5wkXxv1awszk5SyYSpCh4gugu7s4",
+authDomain: "optionreport.firebaseapp.com",
+projectId: "optionreport",
+storageBucket: "optionreport.firebasestorage.app",
+messagingSenderId: "896425261847",
+appId: "1:896425261847:web:4f2452b127773924a6d552"
+};
+/* ===== App Init ===== */
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+/* ===== Collections ===== */
+const COL_CONFIGS = collection(db, "scenarioConfigs");
+const COL_SCENS = collection(db, "scenarios");
+/* ===== State ===== */
+let state = {
+configs: [],
+scenarios: [],
+rulesDraft: [], // temp container for modal rule editor
+activeDate: null
+};
+/* ===== Helpers ===== */
+const $ = sel => document.querySelector(sel);
+const el = (tag, props={}, ...children) => {
+const n = document.createElement(tag);
+Object.entries(props).forEach(([k,v])=>{
+if(k === 'class') n.className = v;
+ else if(k.startsWith('on') && typeof v === 'function') n.addEventListener(k.substring(2).toLowerCase(), v);
+else if(v !== null && v !== undefined) n.setAttribute(k, v);
+});
+for(const c of children){
+if(typeof c === 'string') n.appendChild(document.createTextNode(c));
+else if(c) n.appendChild(c);
+}
+return n;
+};
+const fmtDate = s => s ? new Date(s).toISOString().slice(0,10) : "";
+const toast = (msg) => {
+const t = $("#toast");
+t.textContent = msg;
+t.classList.add("show");
+setTimeout(()=>t.classList.remove("show"), 1800);
+};
+const statusClass = s => {
+const k = (s||"").toLowerCase();
+if(k==="pass") return "chip pass";
+if(k==="fail") return "chip fail";
+if(k==="not produced") return "chip not-produced";
+if(k==="not watched") return "chip not-watched";
+return "chip";
+};
+/* ===== Tabs ===== */
+document.querySelectorAll(".tab").forEach(tab=>{
+tab.addEventListener("click", ()=>{
+document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+tab.classList.add("active");
+const target = tab.dataset.tab;
+["addview","report","config"].forEach(id=>{
+const s = id==="addview" ? "#tab-addview" : id==="report" ? "#tab-report" : "#tab-config";
+document.querySelector(s).classList.toggle("hidden", id!==target);
+});
+});
+});
+/* ===== Data IO (Firestore) ===== */
+async function loadConfigs(){
+const snap = await getDocs(COL_CONFIGS);
+state.configs = snap.docs.map(d=>({id:d.id, ...d.data()}));
+}
+async function loadScenarios(){
+const snap = await getDocs(COL_SCENS);
+state.scenarios = snap.docs.map(d=>({id:d.id, ...d.data()}));
+}
+async function saveConfig({title, description, rules}, id=null) {
+const payload = {
+title: title.trim(),
+description: description?.trim() || "",
+rules: Array.isArray(rules) ? rules : [],
+createdAt: Date.now()
+};
+if(id) {
+await updateDoc(doc(db, "scenarioConfigs", id), payload);
+} else {
+await addDoc(COL_CONFIGS, payload);
+}
+}
+async function deleteConfig(id){
+await deleteDoc(doc(db,"scenarioConfigs",id));
+}
+async function saveScenario(payload, id=null){
+if(id){
+await updateDoc(doc(db,"scenarios",id), payload);
+} else {
+await addDoc(COL_SCENS, {
+...payload,
+createdAt: Date.now()
+});
+}
+}
+async function deleteScenario(id){
+await deleteDoc(doc(db,"scenarios",id));
+}
+/* ===== UI: CONFIG ===== */
+const cfgTitle = $("#cfgTitle");
+const cfgDesc  = $("#cfgDesc");
+const cfgCards = $("#cfgCards");
+const cfgSearch= $("#cfgSearch");
+let editingConfigId = null; // Track config being edited
+$("#btnManageRules").addEventListener("click", ()=>{
+openRulesModal();
+});
+$("#btnSaveConfig").addEventListener("click", async ()=>{
+const title = cfgTitle.value.trim();
+if(!title){ toast("Title required"); return; }
+const description = cfgDesc.value.trim();
+const wasEditing = !!editingConfigId;
+await saveConfig({title, description, rules: state.rulesDraft}, editingConfigId);
+cfgTitle.value = ""; cfgDesc.value = ""; state.rulesDraft = []; editingConfigId = null;
+$("#btnSaveConfig").textContent = "Save Config"; // Reset button text
+await reloadAll();
+toast(wasEditing ? "Scenario config updated" : "Scenario config saved");
+});
+$("#btnReloadConfig").addEventListener("click", async ()=>{
+editingConfigId = null; // Reset editing state
+cfgTitle.value = ""; cfgDesc.value = ""; state.rulesDraft = [];
+$("#btnSaveConfig").textContent = "Save Config"; // Reset button text
+await loadConfigs();
+renderConfigCards();
+toast("Config reloaded");
+});
+cfgSearch.addEventListener("input", ()=> renderConfigCards());
+function renderConfigCards(){
+const q = cfgSearch.value.trim().toLowerCase();
+cfgCards.innerHTML = "";
+const list = state.configs
+ .filter(c => !q || c.title.toLowerCase().includes(q) || (c.description||"").toLowerCase().includes(q))
+.sort((a,b)=>a.title.localeCompare(b.title));
+
+if(!list.length){
+cfgCards.appendChild(el("div",{class:"muted"},"No scenario configs yet."));
+return;
+}
+list.forEach(c=>{
+const rulesCount = Array.isArray(c.rules) ? c.rules.length : 0;
+const card = el("div",{class:"card"},
+el("div",{class:"card-title"}, c.title),
+el("div",{class:"muted"}, c.description || "—"),
+el("div",{class:"muted", style:"margin-top:6px"}, `Rules: ${rulesCount}`),
+el("div",{class:"row",style:"margin-top:10px;gap:8px;flex-wrap:wrap"},
+el("button",{class:"btn btn-outline btn-sm",onClick:()=>openConfigViewer(c)},"View"),
+el("button",{class:"btn btn-primary btn-sm",onClick:()=>openEditConfigModal(c)},"Edit"),
+el("button",{class:"btn btn-success btn-sm",onClick:()=>prefillAddScenarioFromConfig(c)},"Use"),
+el("button",{class:"btn btn-danger btn-sm",onClick:async()=>{
+if(confirm(`Delete "${c.title}"?`)){
+await deleteConfig(c.id);
+await loadConfigs();
+renderConfigCards();
+toast("Config deleted");
+}
+}},"Delete")
+)
+);
+cfgCards.appendChild(card);
+});
+}
+function openConfigViewer(cfg){
+openModal("Scenario Config", (body, footer) => {
+// Title
+body.appendChild(el("div", {}, el("strong", {}, "Title: "), " " + (cfg.title || "")));
+// Description
+body.appendChild(el("div", {}, el("strong", {}, "Description: "), " " + (cfg.description || "—")));
+// --- View Rules Button (on left side of popup) ---
+const rulesBtn = el("button", {
+style: `
+margin-top:15px;
+background:#4a90e2;
+color:white;
+border:none;
+padding:6px 12px;
+border-radius:6px;
+cursor:pointer;
+float:left;
+`
+}, "View Rules");
+rulesBtn.onclick = () => {
+openModal("Scenario Rules", (rulesBody, rulesFooter) => {
+if(!cfg.rules?.length){
+rulesBody.appendChild(el("div", {class:"muted"}, "No rules"));
+} else {
+cfg.rules.forEach((r, i) => {
+const card = el("div", {
+style: `
+background:#fff;
+border:1px solid #ddd;
+border-radius:8px;
+padding:12px;
+margin:8px 0;
+box-shadow:0 2px 4px rgba(0,0,0,0.08);
+`
+},
+el("div", {style:"font-weight:bold;font-size:14px;color:#333"}, `${i+1}. ${r.name || 'Rule'}`),
+el("div", {style:"margin-top:6px;color:#555;font-size:13px"}, r.description || "No description")
+);
+rulesBody.appendChild(card);
+});
+}
+});
+};
+body.appendChild(rulesBtn);
+});
+}
+function openEditConfigModal(cfg) {
+editingConfigId = cfg.id;
+cfgTitle.value = cfg.title;
+cfgDesc.value = cfg.description || "";
+state.rulesDraft = JSON.parse(JSON.stringify(cfg.rules || []));
+$("#btnSaveConfig").textContent = "Update Config";
+document.querySelector('.tab[data-tab="config"]').click();
+}
+function openRulesModal(){
+const local = JSON.parse(JSON.stringify(state.rulesDraft || []));
+openModal("Manage Rules", (body,footer)=>{
+const listDiv = el("div",{class:"col"});
+const render = ()=>{
+listDiv.innerHTML = "";
+if(!local.length){
+listDiv.appendChild(el("div",{class:"muted"},"No rules yet."));
+}
+local.forEach((r,idx)=>{
+const row = el("div",{class:"card"},
+el("div",{class:"grid"},
+el("div",{},
+el("label",{},"Rule Name"),
+el("input",{value:r.name||"",oninput:e=>r.name=e.target.value})
+),
+el("div",{},
+el("label",{},"Description"),
+el("input",{value:r.description||"",oninput:e=>r.description=e.target.value})
+)
+),
+el("div",{class:"row",style:"margin-top:8px"},
+    el("button",{class:"btn btn-outline btn-xs",onClick:()=>{ local.splice(idx,1);render(); }},"Remove")
+)
+);
+listDiv.appendChild(row);
+});
+};
+render();
+
+        const addBtn = el("button",{class:"btn btn-outline btn-sm",onClick:()=>{ local.push({name:"",description:""}); render(); }},"Add Rule");
+body.appendChild(addBtn);
+body.appendChild(el("div",{style:"height:8px"}));
+body.appendChild(listDiv);
+footer.appendChild(el("button",{class:"btn btn-outline",onClick:closeModal},"Cancel"));
+        footer.appendChild(el("button",{class:"btn btn-success",onClick:()=>{ state.rulesDraft = local; closeModal(); toast("Rules updated"); }},"Done"));
+});
+}
+function prefillAddScenarioFromConfig(cfg){
+document.querySelector('.tab[data-tab="addview"]').click();
+openAddScenarioModal({ configId: cfg.id, configTitle: cfg.title });
+}
+/* ===== UI: ADD/VIEW ===== */
+const pickDateEl = $("#pickDate");
+const dayInfo = $("#dayInfo");
+const cardsDay = $("#cardsDay");
+$("#btnRefresh").addEventListener("click", async ()=>{
+await reloadAll();
+toast("Reloaded");
+});
+$("#btnAddScenario").addEventListener("click", ()=>openAddScenarioModal());
+pickDateEl.addEventListener("change", ()=>renderDay());
+pickDateEl.value = new Date().toISOString().slice(0,10);
+function renderDay(){
+const d = pickDateEl.value;
+state.activeDate = d;
+dayInfo.textContent = d ? `Showing scenarios for ${d}` : "Pick a date";
+cardsDay.innerHTML = "";
+const items = state.scenarios
+.filter(s => s.date === d)
+.sort((a,b)=> (a.configTitle||"").localeCompare(b.configTitle||""));
+if(!items.length){
+cardsDay.appendChild(el("div",{class:"muted"},"No scenarios for the selected date."));
+return;
+}
+items.forEach(s=>{
+const chip = el("span",{class:statusClass(s.status)}, s.status||"—");
+        const img = s.imageBase64 ? el("img",{src:s.imageBase64,style:"max-width:100%;max-height:160px;border-radius:10px"}) : null;
+
+const content = el("div",{class:"card"},
+el("div",{class:"card-title"}, s.configTitle || s.title || "Scenario"),
+el("div",{style:"margin:8px 0"}, chip),
+img ? el("div",{class:"preview"}, img) : el("div",{class:"muted"},"No image"),
+el("div",{class:"row",style:"margin-top:10px;gap:8px;flex-wrap:wrap"},
+            el("button",{class:"btn btn-outline btn-sm",onClick:()=>openViewScenarioModal(s)},"View"),
+            el("button",{class:"btn btn-primary btn-sm",onClick:()=>openEditScenarioModal(s)},"Edit"),
+el("button",{class:"btn btn-danger btn-sm",onClick:async()=>{
+if(confirm("Delete this scenario?")){
+await deleteScenario(s.id);
+await loadScenarios();
+renderDay();
+toast("Scenario deleted");
+}
+}},"Delete"),
+            el("button",{class:"btn btn-amber btn-sm",onClick:()=>openCopyScenarioModal(s)},"Copy")
+)
+);
+cardsDay.appendChild(content);
+});
+}
+
+function openAddScenarioModal(prefill = {}) {
+  const modalState = {
+    configId: prefill.configId || "",
+    status: "",
+    explanation: "",
+    base64: "",
+    ruleResults: [],
+    extraImagesBase64: []
+  };
+
+  openModal("Add Scenario", (body, footer) => {
+
+    const renderAddModal = () => {
+      // Clear before re-render
+      body.innerHTML = "";
+      footer.innerHTML = "";
+
+      // Scenario select
+      const configSel = el("select", { id: "asConfig" });
+      configSel.appendChild(el("option", { value: "" }, "-- Choose Scenario --"));
+      state.configs.sort((a, b) => a.title.localeCompare(b.title))
+        .forEach(c => configSel.appendChild(el("option", { value: c.id }, c.title)));
+      configSel.value = modalState.configId;
+      configSel.addEventListener("change", e => modalState.configId = e.target.value);
+
+      // Status select
+      const statusSel = el("select", { id: "asStatus" },
+        el("option", { value: "Pass" }, "Pass"),
+        el("option", { value: "Fail" }, "Fail"),
+        el("option", { value: "Not Produced" }, "Not Produced"),
+        el("option", { value: "Not Watched" }, "Not Watched")
+      );
+      statusSel.value = modalState.status;
+      statusSel.addEventListener("change", e => modalState.status = e.target.value);
+
+      // Explanation
+      const expInput = el("textarea", {
+        id: "asExp",
+        placeholder: "Explanation / Notes..."
+      }, modalState.explanation);
+      expInput.addEventListener("input", e => modalState.explanation = e.target.value);
+
+      // === Main single image ===
+      const imgInput = el("input", { type: "file", accept: "image/*" });
+      const preview = el("div", { class: "preview" },
+        modalState.base64
+          ? el("img", { src: modalState.base64, style: "max-width:220px;max-height:160px;border-radius:8px" })
+          : el("div", { class: "muted" }, "No image yet")
+      );
+      imgInput.addEventListener("change", (e) => {
+        const f = e.target.files?.[0];
+        if (!f) {
+          modalState.base64 = "";
+          preview.innerHTML = "<div class='muted'>No image yet</div>";
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          modalState.base64 = ev.target.result;
+          preview.innerHTML = "";
+          const tag = new Image();
+          tag.src = modalState.base64;
+          tag.style.maxWidth = "220px";
+          tag.style.maxHeight = "160px";
+          tag.style.borderRadius = "8px";
+          preview.appendChild(tag);
+        };
+        reader.readAsDataURL(f);
+      });
+
+      // === Extra images ===
+      const extraBtn = el("button", {
+        class: "btn btn-outline btn-sm",
+        onClick: () => {
+          const input = document.createElement("input");
+          input.type = "file"; input.accept = "image/*"; input.multiple = true;
+          input.onchange = (e) => {
+            const files = [...e.target.files].slice(0, 5 - modalState.extraImagesBase64.length);
+            files.forEach(f => {
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                modalState.extraImagesBase64.push(ev.target.result);
+                renderAddModal();
+              };
+              reader.readAsDataURL(f);
+            });
+          };
+          input.click();
+        }
+      }, "Add More Images");
+
+      const extraPreview = el("div", { class: "col" });
+      modalState.extraImagesBase64.forEach((img, idx) => {
+        extraPreview.appendChild(el("div", { class: "preview" },
+          el("img", { src: img, style: "max-width:120px;max-height:100px;border-radius:6px" }),
+          el("button", {
+            class: "btn btn-danger btn-xs",
+            onClick: () => {
+              modalState.extraImagesBase64.splice(idx, 1);
+              renderAddModal();
+            }
+          }, "Remove")
+        ));
+      });
+
+      // === Build form grid ===
+      const grid = el("div", { class: "grid" },
+        el("div", {}, el("label", {}, "Scenario"), configSel),
+        el("div", {}, el("label", {}, "Status"), statusSel),
+        el("div", { style: "grid-column:1/-1" }, el("label", {}, "Explanation"), expInput),
+        el("div", { style: "grid-column:1/-1" }, el("label", {}, "Image"), imgInput, preview),
+        el("div", { style: "grid-column:1/-1;margin-top:10px" }, extraBtn, extraPreview)
+      );
+      body.appendChild(grid);
+
+      // === Manage Rules button ===
+      const manageBtn = el("button", {
+        class: "btn btn-primary btn-sm",
+        onClick: () => {
+          manageRuleStatuses(modalState.configId, modalState.ruleResults, (newRes) => {
+            modalState.ruleResults = newRes;
+            renderAddModal();
+          });
+        }
+      }, "Manage Rules");
+      body.appendChild(el("div", { style: "margin-top:10px" }, manageBtn));
+
+      // === Footer buttons ===
+      footer.appendChild(el("button", { class: "btn btn-outline", onClick: closeModal }, "Cancel"));
+      footer.appendChild(el("button", {
+        class: "btn btn-success",
+        onClick: async () => {
+          if (!modalState.configId) { toast("Choose a scenario"); return; }
+          const cfg = state.configs.find(x => x.id === modalState.configId);
+          const payload = {
+            date: state.activeDate || pickDateEl.value || new Date().toISOString().slice(0, 10),
+            configId: modalState.configId,
+            configTitle: cfg?.title || "",
+            status: modalState.status,
+            explanation: modalState.explanation,
+            imageBase64: modalState.base64,
+            extraImagesBase64: modalState.extraImagesBase64,
+            ruleResults: modalState.ruleResults
+          };
+          await saveScenario(payload);
+          await loadScenarios();
+          renderDay();
+          closeModal();
+          toast("Scenario added");
+        }
+      }, "Save"));
+    };
+
+    renderAddModal();
+  }, true);
+}
+
+
+function openEditScenarioModal(item) {
+  const modalState = {
+    status: item.status || "",
+    explanation: item.explanation || "",
+    base64: item.imageBase64 || "",
+    extraImagesBase64: item.extraImagesBase64 ? [...item.extraImagesBase64] : [],
+    ruleResults: item.ruleResults ? JSON.parse(JSON.stringify(item.ruleResults)) : [],
+    configId: item.configId,
+    configTitle: item.configTitle || item.title || ""
+  };
+
+  const renderEditModal = () => {
+    openModal("Edit Scenario", (body, footer) => {
+      // Status select
+      const statusSel = el("select", {},
+        ...["Pass","Fail","Not Produced","Not Watched"].map(v => {
+          const o = el("option", { value: v }, v);
+          if (v === modalState.status) o.selected = true;
+          return o;
+        })
+      );
+
+      // Explanation textarea
+      const exp = el("textarea", {}, modalState.explanation);
+
+      // Main image input + preview (unchanged behavior)
+      const imgInput = el("input", { type: "file", accept: "image/*" });
+      const preview = el("div", { class: "preview" },
+        modalState.base64 ? el("img", { src: modalState.base64, style: "max-width:220px;max-height:160px;border-radius:8px" })
+                          : el("div", { class: "muted" }, "No image yet")
+      );
+      imgInput.addEventListener("change", (e) => {
+        const f = e.target.files?.[0];
+        if (!f) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          modalState.base64 = ev.target.result;
+          preview.innerHTML = "";
+          preview.appendChild(el("img", { src: modalState.base64, style: "max-width:220px;max-height:160px;border-radius:8px" }));
+        };
+        reader.readAsDataURL(f);
+      });
+
+      // Extra images: Add More Images button
+      const extraBtn = el("button", { class: "btn btn-outline btn-sm", onClick: () => {
+        // dynamic file input to pick multiple images
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.multiple = true;
+        input.onchange = (e) => {
+          // limit so total extra images <= 5
+          const available = Math.max(0, 5 - modalState.extraImagesBase64.length);
+          const files = [...e.target.files].slice(0, available);
+          files.forEach(f => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              modalState.extraImagesBase64.push(ev.target.result);
+              renderEditModal(); // re-render to show previews
+            };
+            reader.readAsDataURL(f);
+          });
+        };
+        input.click();
+      }}, "Add More Images");
+
+      // Extra images preview area (simple previews with Remove)
+      const extraPreview = el("div", { class: "col" });
+      modalState.extraImagesBase64.forEach((img, idx) => {
+        extraPreview.appendChild(el("div", { class: "preview" },
+          el("img", { src: img, style: "max-width:120px;max-height:100px;border-radius:6px" }),
+          el("button", { class: "btn btn-danger btn-xs", onClick: () => {
+            modalState.extraImagesBase64.splice(idx, 1);
+            renderEditModal();
+          }}, "Remove")
+        ));
+      });
+
+      // Build form grid
+      body.appendChild(el("div", { class: "grid" },
+        el("div", {}, el("label", {}, "Scenario"), el("input", { disabled: true, value: modalState.configTitle })),
+        el("div", {}, el("label", {}, "Status"), statusSel),
+        el("div", { style: "grid-column:1/-1" }, el("label", {}, "Explanation"), exp),
+        el("div", { style: "grid-column:1/-1" }, el("label", {}, "Image"), imgInput, el("div", { style: "height:8px" }), preview),
+        el("div", { style: "grid-column:1/-1;margin-top:10px" }, extraBtn, extraPreview)
+      ));
+
+      // Manage Rules button (restores rule management & comments)
+      const manageBtn = el("button", {
+        class: "btn btn-primary",
+        style: "margin-right:auto",
+        onClick: () => {
+          manageRuleStatuses(modalState.configId, modalState.ruleResults, (newRes) => {
+            modalState.ruleResults = newRes;
+            renderEditModal();
+          });
+        }
+      }, "Manage Rules");
+
+      // Footer controls (Cancel + Update)
+      footer.appendChild(manageBtn);
+      footer.appendChild(el("button", { class: "btn btn-outline", onClick: closeModal }, "Cancel"));
+      footer.appendChild(el("button", { class: "btn btn-success", onClick: async () => {
+        // Compose payload including extraImagesBase64
+        const payload = {
+          status: modalState.status,
+          explanation: modalState.explanation || "",
+          imageBase64: modalState.base64 || "",
+          extraImagesBase64: modalState.extraImagesBase64,
+          ruleResults: modalState.ruleResults
+        };
+        // Save to Firestore: update existing scenario (item.id)
+        await saveScenario(payload, item.id);
+        await loadScenarios();
+        renderDay();
+        closeModal();
+        toast("Scenario updated");
+      }}, "Update"));
+
+      // wire up inputs -> modalState
+      statusSel.addEventListener("change", () => { modalState.status = statusSel.value; });
+      exp.addEventListener("input", () => { modalState.explanation = exp.value; });
+    }, true);
+  };
+
+  renderEditModal();
+}
+function openViewScenarioModal(item) {
+  openModal("View Scenario", (body, footer) => {
+    // === Left-aligned fields ===
+    const fieldWrapper = el("div", { style: "margin-bottom:12px;display:flex;flex-direction:column;gap:6px;" });
+    fieldWrapper.appendChild(
+      el("div", { style: "display:flex;gap:6px;align-items:flex-start;" },
+        el("strong", { style: "min-width:80px;" }, "Date:"),
+        el("span", {}, item.date || "—")
+      )
+    );
+    fieldWrapper.appendChild(
+      el("div", { style: "display:flex;gap:6px;align-items:flex-start;" },
+        el("strong", { style: "min-width:80px;" }, "Scenario:"),
+        el("span", {}, item.configTitle || item.title || "—")
+      )
+    );
+    // Status
+    fieldWrapper.appendChild(
+      el("div", { style: "display:flex;gap:6px;align-items:flex-start;" },
+        el("strong", { style: "min-width:80px;" }, "Status:"),
+        el("span", {}, item.status || "—")
+      )
+    );
+
+    // Rules Passed
+    if (item.ruleResults && item.ruleResults.length) {
+      const passed = item.ruleResults.filter(r => (r.status || "").toLowerCase() === "pass").length;
+      const total = item.ruleResults.length;
+      fieldWrapper.appendChild(
+        el("div", { style: "display:flex;gap:6px;align-items:flex-start;" },
+          el("strong", { style: "min-width:80px;" }, "Rules:"),
+          el("span", {}, `${passed}/${total} Rules Passed`)
+        )
+      );
+    }
+
+    body.appendChild(fieldWrapper);
+
+    // === Explanation box ===
+    body.appendChild(el("div", { style: "margin-top:10px;" }, el("strong", {}, "Explanation:")));
+    const explanationBox = el("div", {
+      style: `
+        margin-top:6px;
+        padding:10px 12px;
+        border:1px solid #ccc;
+        border-radius:8px;
+        background:#f9f9f9;
+        white-space:pre-wrap;
+        line-height:1.5;
+        font-size:14px;
+        color:#333;
+      `
+    }, item.explanation || "—");
+    body.appendChild(explanationBox);
+
+    // === Image (main) ===
+    body.appendChild(el("div", { style: "margin-top:14px" }, el("strong", {}, "Image")));
+    if (item.imageBase64) {
+      const img = new Image();
+      img.src = item.imageBase64;
+      img.style.maxWidth = "320px";
+      img.style.borderRadius = "10px";
+      img.style.marginTop = "6px";
+      img.style.cursor = "zoom-in";
+
+      // Click opens reusable overlay
+      img.addEventListener("click", () => showZoomOverlay(item.imageBase64));
+      body.appendChild(img);
+    } else {
+      body.appendChild(el("div", { class: "muted", style: "margin-top:6px;" }, "No image"));
+    }
+
+    // === Extra Images (View More Images button -> thumbnails) ===
+    if (item.extraImagesBase64 && item.extraImagesBase64.length) {
+      const moreBtn = el("button", {
+        class: "btn btn-outline btn-sm",
+        style: "margin-top:10px",
+        onClick: () => {
+          const thumbDiv = el("div", { class: "col", style: "margin-top:10px;display:flex;flex-wrap:wrap;" });
+          item.extraImagesBase64.forEach((imgSrc) => {
+            const thumb = el("img", {
+              src: imgSrc,
+              style: "max-width:120px;max-height:100px;border-radius:6px;cursor:pointer;margin:4px"
+            });
+            thumb.addEventListener("click", () => showZoomOverlay(imgSrc));
+            thumbDiv.appendChild(thumb);
+          });
+          moreBtn.replaceWith(thumbDiv);
+        }
+      }, "View More Images");
+      body.appendChild(moreBtn);
+    }
+
+    // === Footer buttons: View Rule Statuses, View Rule Details, Close ===
+
+    // 1) View Rule Statuses button (in footer) - shows status + comments
+    const ruleStatusesBtn = el("button", {
+      class: "btn btn-primary btn-sm",
+      onClick: () => {
+        openModal("Rule Statuses", (subBody, subFooter) => {
+          subBody.appendChild(el("div", { class: "col" }));
+          if (!item.ruleResults || !item.ruleResults.length) {
+            subBody.appendChild(el("div", { class: "muted" }, "No rule results"));
+          } else {
+            // show each rule with status chip + comments
+            item.ruleResults.forEach(r => {
+              const statusChip = el("span", { class: statusClass(r.status) }, r.status || "—");
+              subBody.appendChild(el("div", { class: "card", style: "margin-bottom:8px" },
+                el("div", { class: "col" },
+                  el("div", { style: "display:flex;justify-content:space-between;align-items:center" },
+                    el("strong", {}, r.name || "Rule"),
+                    statusChip
+                  ),
+                  el("div", { style: "margin-top:6px" }, el("b", {}, "Comments: "), r.comment || "—")
+                )
+              ));
+            });
+          }
+          subFooter.appendChild(el("button", { class: "btn btn-outline", onClick: closeModal }, "Close"));
+        });
+      }
+    }, "View Rule Statuses");
+    footer.appendChild(ruleStatusesBtn);
+
+    // 2) View Rule Details (existing behavior) - keep in footer
+    const ruleDetailsBtn = el("button", {
+      class: "btn btn-primary btn-sm",
+      onClick: () => {
+        openModal("Rule Details", (subBody, subFooter) => {
+          subBody.appendChild(el("div", { class: "col" }));
+          const cfg = state.configs.find(c => c.id === item.configId);
+          const rules = cfg?.rules || [];
+          if (!rules.length) {
+            subBody.appendChild(el("div", { class: "muted" }, "No rules defined"));
+          } else {
+            rules.forEach(r => {
+              subBody.appendChild(el("div", { class: "card", style: "margin-bottom:8px" },
+                el("div", { class: "col" },
+                  el("strong", {}, r.name || "Rule"),
+                  el("div", { class: "muted" }, r.description || "No description")
+                )
+              ));
+            });
+          }
+          subFooter.appendChild(el("button", { class: "btn btn-outline", onClick: closeModal }, "Close"));
+        });
+      }
+    }, "View Rule Details");
+    footer.appendChild(ruleDetailsBtn);
+
+    // 3) Close
+    footer.appendChild(el("button", { class: "btn btn-outline", onClick: closeModal }, "Close"));
+  });
+}
+
+// === Reusable Zoom Overlay function (keeps the same drag/pinch/double-tap behaviour) ===
+function showZoomOverlay(base64) {
+  const overlay = document.createElement("div");
+  Object.assign(overlay.style, { position: "fixed", inset: "0", background: "rgba(0,0,0,0.9)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: "9999" });
+  document.body.appendChild(overlay);
+
+  const zoomImg = new Image();
+  zoomImg.src = base64;
+  Object.assign(zoomImg.style, { maxWidth: "95%", maxHeight: "80vh", borderRadius: "12px", boxShadow: "0 0 20px rgba(255,255,255,0.2)", touchAction: "none" });
+  overlay.appendChild(zoomImg);
+
+  // Floating buttons
+  const topBar = document.createElement("div");
+  Object.assign(topBar.style, { position: "absolute", top: "12px", right: "12px", display: "flex", gap: "10px", zIndex: "10000" });
+  overlay.appendChild(topBar);
+
+  const dlBtn = document.createElement("button");
+  dlBtn.textContent = "⬇";
+  Object.assign(dlBtn.style, { background: "#fff", color: "#000", border: "none", borderRadius: "50%", width: "36px", height: "36px", fontSize: "18px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" });
+  dlBtn.onclick = () => { const link = document.createElement("a"); link.href = base64; link.download = "scenario-image.png"; link.click(); };
+  topBar.appendChild(dlBtn);
+
+  const closeBtn = document.createElement("button");
+  closeBtn.textContent = "✕";
+  Object.assign(closeBtn.style, { background: "#fff", color: "#000", border: "none", borderRadius: "50%", width: "36px", height: "36px", fontSize: "20px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" });
+  closeBtn.onclick = () => overlay.remove();
+  topBar.appendChild(closeBtn);
+
+  // Pinch + drag + double tap
+  let scale = 1, lastScale = 1, startDist = 0, startX = 0, startY = 0, lastX = 0, lastY = 0, lastTap = 0;
+  function update() { zoomImg.style.transform = `translate(${lastX}px,${lastY}px) scale(${scale})`; }
+
+  zoomImg.addEventListener("touchstart", e => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      startDist = Math.sqrt(dx * dx + dy * dy);
+    } else if (e.touches.length === 1 && scale > 1) {
+      startX = e.touches[0].clientX - lastX;
+      startY = e.touches[0].clientY - lastY;
+    }
+  }, { passive: false });
+
+  zoomImg.addEventListener("touchmove", e => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const newDist = Math.sqrt(dx * dx + dy * dy);
+      scale = Math.min(5, Math.max(1, lastScale * (newDist / startDist)));
+      update();
+    } else if (e.touches.length === 1 && scale > 1) {
+      e.preventDefault();
+      lastX = e.touches[0].clientX - startX;
+      lastY = e.touches[0].clientY - startY;
+      update();
+    }
+  }, { passive: false });
+
+  zoomImg.addEventListener("touchend", e => {
+    if (e.touches.length < 2) lastScale = scale;
+    const now = Date.now();
+    if (now - lastTap < 300 && e.touches.length === 0) {
+      if (scale === 1) { scale = 2; } else { scale = 1; lastX = lastY = 0; }
+      lastScale = scale; update();
+    }
+    lastTap = now;
+  });
+}
+function openCopyScenarioModal(item){
+openModal("Copy Scenario", (body,footer)=>{
+const dateIn = el("input",{type:"date",value:item.date});
+const statusSel = el("select",{},
+...["Pass","Fail","Not Produced","Not Watched"].map(v=>{
+const o=el("option",{value:v},v); if(v===item.status) o.selected=true; return o;
+})
+);
+body.appendChild(el("div",{class:"grid"},
+el("div",{}, el("label",{},"To Date"), dateIn),
+el("div",{}, el("label",{},"Status"), statusSel)
+));
+footer.appendChild(el("button",{class:"btn btn-outline",onClick:closeModal},"Cancel"));
+footer.appendChild(el("button",{class:"btn btn-success",onClick:async()=>{
+const payload = {
+date: dateIn.value || item.date,
+configId: item.configId,
+configTitle: item.configTitle,
+status: statusSel.value,
+explanation: item.explanation || "",
+imageBase64: item.imageBase64 || "",
+ruleResults: item.ruleResults || []
+};
+await saveScenario(payload);
+await loadScenarios();
+renderDay();
+closeModal();
+toast("Scenario copied");
+}},"Copy"));
+});
+}
+/* ===== UI: REPORT ===== */
+const fromEl = $("#fromDate");
+const toEl = $("#toDate");
+$("#btnRunReport").addEventListener("click", ()=>renderReport());
+function buildTable(headers, rows){
+const table = el("table");
+const thead = el("thead");
+const htr = el("tr");
+headers.forEach(h=>htr.appendChild(el("th",{},h)));
+thead.appendChild(htr); table.appendChild(thead);
+const tbody = el("tbody");
+rows.forEach(r=>{
+const tr = el("tr");
+r.forEach(c=>tr.appendChild(el("td",{}, String(c))));
+tbody.appendChild(tr);
+});
+table.appendChild(tbody);
+return table;
+}
+function renderReport(){
+const f = fromEl.value, t = toEl.value;
+if(!f || !t || f>t){ toast("Pick a valid date range"); return; }
+const list = state.scenarios.filter(s=> s.date>=f && s.date<=t);
+const statuses = ["Pass","Fail","Not Produced","Not Watched"];
+const counts = Object.fromEntries(statuses.map(s=>[s,0]));
+list.forEach(s=>{ if(counts[s.status]!==undefined) counts[s.status]++; });
+const total = list.length || 1;
+const rowsSummary = statuses.map(s=>[s, counts[s],
+((counts[s]*100)/total).toFixed(1)+"%"]);
+$("#tblSummary").innerHTML = "";
+$("#tblSummary").appendChild(buildTable(["Status","Count","%"], rowsSummary));
+const byTitle = {};
+list.forEach(s=>{
+const key = s.configTitle || s.title || "—";
+byTitle[key] ||= {Pass:0,Fail:0,"Not Produced":0,"Not Watched":0,total:0};
+byTitle[key][s.status] = (byTitle[key][s.status]||0)+1;
+byTitle[key].total++;
+});
+const rowsScen = Object.entries(byTitle).map(([title,st])=>[
+title, st.Pass||0, st.Fail||0, st["Not Produced"]||0, st["Not Watched"]||0,
+st.total ? ((st.Pass||0)*100/st.total).toFixed(1)+"%" : "0%"
+]);
+$("#tblScenarioWise").innerHTML="";
+$("#tblScenarioWise").appendChild(buildTable(["Scenario","Pass","Fail","Not Produced","Not Watched","% Pass"], rowsScen));
+const rowsDet = [...list].sort((a,b)=>
+(a.date+b.configTitle).localeCompare(b.date+b.configTitle))
+.map(s=>[s.date, s.configTitle||s.title||"—", s.status, s.explanation||""]);
+$("#tblDetailed").innerHTML="";
+$("#tblDetailed").appendChild(buildTable(["Date","Scenario","Status","Explanation"],
+rowsDet));
+}
+/* ===== Modal infra ===== */
+const backdrop = $("#modalBackdrop");
+const modalTitle = $("#modalTitle");
+const modalBody = $("#modalBody");
+const modalFooter= $("#modalFooter");
+let modalStack = []; // Track open modals to prevent parent modal closure
+$("#btnCloseModal").addEventListener("click", closeModal);
+function openModal(title, builder, isParentModal = false) {
+if (isParentModal) {
+modalStack = []; // Clear stack for new parent modal
+}
+modalStack.push({ title, builder }); // Add to stack
+const top = modalStack[modalStack.length - 1];
+modalTitle.textContent = top.title;
+modalBody.innerHTML = "";
+modalFooter.innerHTML = "";
+top.builder(modalBody, modalFooter);
+backdrop.style.display = "flex";
+}
+function closeModal() {
+modalStack.pop(); // Remove current modal from stack
+if (modalStack.length > 0) {
+// Reopen the previous modal in the stack
+const { title, builder } = modalStack[modalStack.length - 1];
+modalTitle.textContent = title;
+modalBody.innerHTML = "";
+modalFooter.innerHTML = "";
+builder(modalBody, modalFooter);
+backdrop.style.display = "flex";
+} else {
+// No modals left, hide backdrop
+backdrop.style.display = "none";
+}
+}
+// ====== FIXED: Manage Rule Statuses — SAVE order ======
+function manageRuleStatuses(cfgId, currentResults, onDone) {
+  if (!cfgId) { toast("Choose a scenario first"); return; }
+  const cfg = state.configs.find(x => x.id === cfgId);
+  if (!cfg) { toast("Scenario not found"); return; }
+  if (!cfg.rules || !cfg.rules.length) { toast("No rules for this scenario"); return; }
+
+  let localRules = currentResults && currentResults.length ?
+    JSON.parse(JSON.stringify(currentResults)) :
+    cfg.rules.map(r => ({...r, status: "", comment: ""}));
+
+  openModal("Manage Rule Statuses", (body, footer) => {
+    const listDiv = el("div", {class: "col"});
+    const render = () => {
+      listDiv.innerHTML = "";
+      localRules.forEach((r, idx) => {
+        const sel = el("select", {},
+          el("option", {value: ""}, "-- Select --"),
+          el("option", {value: "Pass"}, "Pass"),
+          el("option", {value: "Fail"}, "Fail"),
+          el("option", {value: "Not Produced"}, "Not Produced")
+        );
+        sel.value = r.status || "";
+        sel.addEventListener("change", e => localRules[idx].status = e.target.value);
+
+        const commentBox = el("textarea", {placeholder:"Comments...", style:"margin-top:6px"}, r.comment || "");
+        commentBox.addEventListener("input", e => localRules[idx].comment = e.target.value);
+
+        const card = el("div", {class: "card"},
+          el("div", {class: "card-title"}, r.name || "Rule " + (idx+1)),
+          el("div", {class: "muted"}, r.description || "No description"),
+          el("div", {style: "margin-top: 8px;"}, el("label", {}, "Status"), sel),
+          el("div", {style: "margin-top: 8px;"}, el("label", {}, "Comments"), commentBox)
+        );
+        listDiv.appendChild(card);
+      });
+    };
+
+    render();
+    body.appendChild(listDiv);
+
+    footer.appendChild(el("button", {class: "btn btn-outline", onClick: closeModal}, "Cancel"));
+    footer.appendChild(el("button", {
+      class: "btn btn-success",
+      onClick: () => {
+        closeModal();
+        onDone(localRules);
+        toast("Rule statuses updated");
+      }
+    }, "Save"));
+  });
+}
+
+/* ===== Boot ===== */
+async function reloadAll(){
+try {
+await Promise.all([loadConfigs(), loadScenarios()]);
+renderConfigCards();
+renderDay();
+} catch (error) {
+console.error("Error reloading data:", error);
+toast("Failed to reload data");
+}
+}
+await reloadAll();
+</script>
+</body>
+</html>
