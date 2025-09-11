@@ -1182,14 +1182,14 @@ table td, table th {
 </div>
 <div class="row" style="margin-top:10px">
 <button class="btn btn-primary btn-sm" id="btnManageRules">Manage Rules</button>
-<button class="btn btn-success" id="btnSaveConfig">Save Config</button>
-  <button class="btn btn-amber" id="btnRenameConfig">Rename Config</button>
+<button class="btn btn-success" id="btnSaveConfig">Save</button>
+  <button class="btn btn-amber" id="btnRenameConfig">Rename</button>
 
 </div>
 </div>
 <div class="toolbar" style="margin-top:14px">
 <input id="cfgSearch" placeholder="Search scenario..."/>
-<button class="btn btn-primary" id="btnReloadConfig">Reload</button>
+<button class="btn btn-primary" id="btnReloadConfig">Refresh Configuration</button>
 </div>
 <div id="cfgCards" class="cards"></div>
 </section>
@@ -1740,7 +1740,7 @@ function openAddScenarioModal(prefill = {}) {
           await loadScenarios();
           renderDay();
           closeModal();
-          toast("Scenario added");
+          toast("Scenario Added");
         }
       }, "Save"));
     };
@@ -1866,7 +1866,7 @@ function openEditScenarioModal(item) {
         await loadScenarios();
         renderDay();
         closeModal();
-        toast("Scenario updated");
+        toast("Scenario Updated");
       }}, "Update"));
 
       // wire up inputs -> modalState
