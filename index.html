@@ -311,25 +311,46 @@ textarea {
   transition: transform .4s ease, opacity .4s ease;
 }
 
-/* Handle button (tap/hover target) */
+/* === Premium Floating Crystal Handle === */
+/* === Premium Floating Crystal Handle (medium size) === */
 .tab-handle {
   position: fixed;
-  bottom: 18px;
+  bottom: 24px;
   left: 50%;
-  transform: translate(-50%, 120%);
-  background: rgba(96, 165, 250, 0.35); /* 💎 light-blue glass */
-  backdrop-filter: blur(12px);          /* frosted glass */
-  -webkit-backdrop-filter: blur(12px);  /* Safari support */
-  color: #fff;
-  padding: 10px 18px;
-  border-radius: 18px 18px 0 0;
+  transform: translateX(-50%);
+  background: rgba(80,160,255,0.25);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  color: #ffffff;
+  padding: 16px 40px;                 /* ⬅️ smaller padding */
+  font-size: 1.3rem;                  /* ⬅️ slightly smaller arrow */
+  border-radius: 32px;                /* proportional curve */
   cursor: pointer;
   z-index: 1002;
-  font-weight: 700;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-  transition: background .3s;
+  font-weight: 800;
+  box-shadow:
+      inset 0 0 10px rgba(255,255,255,0.25),
+      0 10px 24px rgba(0,40,120,0.35),
+      0 0 18px rgba(80,160,255,0.45);
+  border: 1px solid rgba(255,255,255,0.25);
+  transition:
+      transform .25s ease,
+      box-shadow .25s ease,
+      background .25s ease;
+  -webkit-tap-highlight-color: transparent;
 }
-.tab-handle:hover { background: rgba(147,197,253,0.45);  }
+
+.tab-handle:hover {
+  background: rgba(120,190,255,0.35);
+  box-shadow:
+      inset 0 0 12px rgba(255,255,255,0.30),
+      0 14px 30px rgba(0,40,120,0.4),
+      0 0 22px rgba(120,190,255,0.55);
+  transform: translateX(-50%) translateY(-4px) scale(1.05);
+}
+.tab-handle:active {
+  transform: translateX(-50%) translateY(0) scale(0.96);
+}
 
 /* end of tabs replacement */
 /* Individual Tab */
@@ -1274,12 +1295,14 @@ document.querySelector(s).classList.toggle("hidden", id!==target);
   function showTabs() {
     tabsBar.classList.add('show-slide');
     tabsBar.classList.remove('hidden-slide');
+	handle.style.display = 'none';  
     resetAutoHide();
   }
 
   function hideTabs() {
     tabsBar.classList.remove('show-slide');
     tabsBar.classList.add('hidden-slide');
+	handle.style.display = 'block'; 
   }
 
   function resetAutoHide() {
@@ -1378,7 +1401,7 @@ await saveConfig({title, description, rules: state.rulesDraft}, editingConfigId)
 cfgTitle.value = ""; cfgDesc.value = ""; state.rulesDraft = []; editingConfigId = null;
 $("#btnSaveConfig").textContent = "Save Config"; // Reset button text
 await reloadAll();
-toast(wasEditing ? "Scenario config updated" : "Scenario config saved");
+toast(wasEditing ? "Scenario Configuration Updated" : "Scenario Configuration Saved");
 });
 $("#btnReloadConfig").addEventListener("click", async ()=>{
 editingConfigId = null; // Reset editing state
@@ -1386,7 +1409,7 @@ cfgTitle.value = ""; cfgDesc.value = ""; state.rulesDraft = [];
 $("#btnSaveConfig").textContent = "Save Config"; // Reset button text
 await loadConfigs();
 renderConfigCards();
-toast("Config reloaded");
+toast("Scenario Configuration Reloaded Successfully");
 });
 cfgSearch.addEventListener("input", ()=> renderConfigCards());
 function renderConfigCards(){
@@ -1416,7 +1439,7 @@ if(confirm(`Delete "${c.title}"?`)){
 await deleteConfig(c.id);
 await loadConfigs();
 renderConfigCards();
-toast("Config deleted");
+toast("Scenario Configuration Deleted");
 }
 }},"Delete")
 )
@@ -1526,7 +1549,7 @@ const dayInfo = $("#dayInfo");
 const cardsDay = $("#cardsDay");
 $("#btnRefresh").addEventListener("click", async ()=>{
 await reloadAll();
-toast("Reloaded");
+toast("Daily Scenario Reloaded Successfully");
 });
 $("#btnAddScenario").addEventListener("click", ()=>openAddScenarioModal());
 pickDateEl.addEventListener("change", ()=>renderDay());
@@ -1559,7 +1582,7 @@ if(confirm("Delete this scenario?")){
 await deleteScenario(s.id);
 await loadScenarios();
 renderDay();
-toast("Scenario deleted");
+toast("Daily Scenario Deleted");
 }
 }},"Delete"),
             el("button",{class:"btn btn-amber btn-sm",onClick:()=>openCopyScenarioModal(s)},"Copy")
