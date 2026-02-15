@@ -1074,6 +1074,170 @@ table td, table th {
   font-size: 0.9rem;
   display: none;
 }
+.find-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.find-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #e6ebff;
+  border-radius: 12px;
+}
+
+.find-summary-name {
+  flex: 1;
+  font-weight: 700;
+}
+/* ===== FIND SCENARIO – PRO UI (MOBILE FIRST) ===== */
+
+.find-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.toggle {
+  display: flex;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid #d1d5db;
+}
+
+.toggle button {
+  padding: 8px 18px;
+  border: none;
+  background: #f3f4f6;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.toggle button.active {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* === FIND SCENARIO : MODERN SUMMARY UI === */
+
+.summary-chip {
+  position: relative;
+  padding: 14px 16px 18px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.85);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: all .28s ease;
+  margin-bottom: 12px;
+}
+
+.summary-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.1);
+}
+
+.summary-chip.active {
+  border-color: #6366f1;
+  box-shadow:
+    0 14px 34px rgba(99,102,241,.35),
+    inset 0 0 0 1px rgba(99,102,241,.3);
+}
+
+.summary-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.summary-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #c7d2fe;
+}
+
+.summary-chip.active .summary-dot {
+  background: #6366f1;
+}
+
+.summary-text {
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.summary-right {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  font-weight: 800;
+  color: #4f46e5;
+}
+
+.summary-bar {
+  height: 6px;
+  background: #eef2ff;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.summary-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg,#6366f1,#818cf8);
+  border-radius: 999px;
+  transition: width .3s ease;
+}
+
+.find-summary-name {
+  flex: 1;
+  font-weight: 700;
+}
+
+.find-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 14px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 24px rgba(0,0,0,.06);
+}
+
+.heat-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg,#ef4444,#facc15,#22c55e);
+  margin-top: 8px;
+}
+
+.saved-search {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px dashed #93c5fd;
+  background: #eff6ff;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.saved-search-delete {
+  color: #ef4444;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+@media (min-width:768px) {
+  .find-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 24px;
+  }
+}
 </style>
 </head>
 <body>
@@ -1103,8 +1267,7 @@ table td, table th {
 <!-- Tabs -->
 <div class="tabs">
 <div class="tab active" data-tab="addview">Add / View</div>
-
-
+<div class="tab" data-tab="findscenario">Find Scenario</div>
 <div class="tab" data-tab="report">Report</div>
 <div class="tab" data-tab="config">Scenario Config</div>
 </div>
@@ -1166,6 +1329,36 @@ table td, table th {
     <div class="twrap" id="tblDetailed"></div>
   </div>
 </section>
+<!-- FIND SCENARIO -->
+<section id="tab-findscenario" class="hidden">
+  <h2>Find Scenario</h2>
+
+  <div class="find-toolbar">
+    <div class="toggle">
+      <button id="modeAND" class="active">AND</button>
+      <button id="modeOR">OR</button>
+    </div>
+
+    <label>
+      Min Weight
+      <input type="range" min="0" max="100" value="0" id="minWeight">
+      <span id="mwVal">0</span>
+    </label>
+
+    <button class="btn btn-outline" id="btnSaveSearch">Save Search</button>
+  </div>
+
+  <div class="find-grid">
+    <div id="findSummaryList"></div>
+    <div>
+      <h4>Results</h4>
+      <div id="findScenarioResults"></div>
+
+      <h4>Saved Searches</h4>
+      <div id="savedSearches"></div>
+    </div>
+  </div>
+</section>
 <!-- CONFIG -->
 <section id="tab-config" class="hidden">
 <h2>Scenario Configuration</h2>
@@ -1183,9 +1376,11 @@ table td, table th {
 <div class="row" style="margin-top:10px">
 <button class="btn btn-primary btn-sm" id="btnManageRules">Manage Rules</button>
 <button class="btn btn-success" id="btnSaveConfig">Save</button>
-  <button class="btn btn-amber" id="btnRenameConfig">Rename</button>
-
+<button class="btn btn-amber" id="btnRenameConfig">Rename</button>
 </div>
+</div>
+<div class="toolbar" style="margin-top:10px">
+<button class="btn btn-outline btn-sm" id="btnManageSummary">+ Add Summary Points</button>
 </div>
 <div class="toolbar" style="margin-top:14px">
 <input id="cfgSearch" placeholder="Search scenario..."/>
@@ -1230,6 +1425,7 @@ const db = getFirestore(app);
 /* ===== Collections ===== */
 const COL_CONFIGS = collection(db, "scenarioConfigs");
 const COL_SCENS = collection(db, "scenarios");
+const COL_SUMMARY = collection(db, "summaryPoints");
 /* ===== State ===== */
 let state = {
 configs: [],
@@ -1237,6 +1433,8 @@ scenarios: [],
 rulesDraft: [], // temp container for modal rule editor
 activeDate: null
 };
+let summaryCache = [];
+let findScenarioInitialized = false;
 /* ===== Helpers ===== */
 const $ = sel => document.querySelector(sel);
 const el = (tag, props={}, ...children) => {
@@ -1268,15 +1466,30 @@ if(k==="not watched") return "chip not-watched";
 return "chip";
 };
 /* ===== Tabs ===== */
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest('[data-action="summary-weight"]');
+  if (!btn) return;
+
+  const cfgId = btn.dataset.id;
+  const cfg = state.configs.find(c => c.id === cfgId);
+  if (cfg) openSummaryWeightModal(cfg);
+});
+
 document.querySelectorAll(".tab").forEach(tab=>{
 tab.addEventListener("click", ()=>{
 document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
 tab.classList.add("active");
 const target = tab.dataset.tab;
-["addview","report","config"].forEach(id=>{
-const s = id==="addview" ? "#tab-addview" : id==="report" ? "#tab-report" : "#tab-config";
+["addview","findscenario","report","config"].forEach(id=>{
+const s = id==="addview" ? "#tab-addview" : id === "findscenario" ? "#tab-findscenario" : id==="report" ? "#tab-report" : "#tab-config";
 document.querySelector(s).classList.toggle("hidden", id!==target);
 });
+if (target === "findscenario") {
+  if (!findScenarioInitialized) {
+    loadFindScenario();
+    findScenarioInitialized = true;
+  }
+}
 });
 });
 
@@ -1433,6 +1646,11 @@ el("div",{class:"row",style:"margin-top:10px;gap:8px;flex-wrap:wrap"},
 el("button",{class:"btn btn-outline btn-sm",onClick:()=>openConfigViewer(c)},"View"),
 el("button",{class:"btn btn-primary btn-sm",onClick:()=>openEditConfigModal(c)},"Edit"),
 el("button",{class:"btn btn-success btn-sm",onClick:()=>prefillAddScenarioFromConfig(c)},"Use"),
+el("button",{
+  class:"btn btn-primary btn-sm",
+  "data-action":"summary-weight",
+  "data-id": c.id
+},"Summary & Weight"),
 el("button",{class:"btn btn-amber btn-sm",onClick:()=>openCopyConfigModal(c)},"Copy"),
 el("button",{class:"btn btn-danger btn-sm",onClick:async()=>{
 if(confirm(`Delete "${c.title}"?`)){
@@ -1538,6 +1756,255 @@ body.appendChild(listDiv);
 footer.appendChild(el("button",{class:"btn btn-outline",onClick:closeModal},"Cancel"));
         footer.appendChild(el("button",{class:"btn btn-success",onClick:()=>{ state.rulesDraft = local; closeModal(); toast("Rules updated"); }},"Done"));
 });
+}
+/* ===============================
+   SUMMARY POINTS MASTER
+   =============================== */
+async function openSummaryMaster() {
+  const snap = await getDocs(COL_SUMMARY);
+  let local = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+  openModal("Summary Points", (body, footer) => {
+    const list = el("div", { class: "col" });
+
+    const render = () => {
+      list.innerHTML = "";
+      if (!local.length) {
+        list.appendChild(el("div", { class: "muted" }, "No summary points"));
+      }
+
+      local.forEach((s, idx) => {
+        list.appendChild(
+          el("div", { class: "row" },
+            el("input", {
+				placeholder: "Summary name",
+				value: s.name || "",
+				oninput: e => s.name = e.target.value
+				}),
+				el("input", {
+				type: "number",
+				placeholder: "Order",
+				style: "width:100px",
+				value: s.displayOrder ?? 0,
+				oninput: e => s.displayOrder = Number(e.target.value || 0)
+				}),
+            el("button", {
+              class: "btn btn-danger btn-xs",
+              onClick: () => {
+                local.splice(idx, 1);
+                render();
+              }
+            }, "Delete")
+          )
+        );
+      });
+    };
+
+    render();
+
+    footer.appendChild(
+      el("button", {
+        class: "btn btn-outline",
+        onClick: () => {
+          local.push({ name: "" });
+          render();
+        }
+      }, "Add")
+    );
+
+    footer.appendChild(
+      el("button", {
+        class: "btn btn-success",
+        onClick: async () => {
+          const batch = writeBatch(db);
+          // 1️⃣ Delete removed summaries
+snap.docs.forEach(d => {
+  if (!local.some(s => s.id === d.id)) {
+    batch.delete(d.ref);
+  }
+});
+
+// 2️⃣ Update existing summaries
+local.forEach(s => {
+  if (s.id && s.name?.trim()) {
+    batch.set(
+  doc(COL_SUMMARY, s.id),
+  {
+    name: s.name.trim(),
+    displayOrder: s.displayOrder ?? 0
+  },
+  { merge: true }
+);
+  }
+});
+
+// 3️⃣ Add new summaries
+local.forEach(s => {
+  if (!s.id && s.name?.trim()) {
+    batch.set(doc(COL_SUMMARY), {
+  name: s.name.trim(),
+  displayOrder: s.displayOrder ?? 0,
+  createdAt: Date.now()
+});
+  }
+});
+          await batch.commit();
+		  findScenarioInitialized = false;
+		  summaryCache = [];
+          closeModal();
+          toast("Summary points saved");
+        }
+      }, "Save")
+    );
+
+    body.appendChild(list);
+  });
+}
+/* ===============================
+   SUMMARY + WEIGHT PER SCENARIO
+   =============================== */
+async function openSummaryWeightModal(cfg) {
+  if (summaryCache.length === 0) {
+  const snap = await getDocs(COL_SUMMARY);
+  summaryCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+const summaries = summaryCache;
+
+
+  const local = JSON.parse(JSON.stringify(cfg.summaryWeights || []));
+
+  openModal("Summary & Weight", (body, footer) => {
+  
+	const listWrap = el("div", { class: "col" });
+	body.appendChild(listWrap);
+
+    const render = () => {
+      body.innerHTML = "";
+
+      local.forEach((r, idx) => {
+        body.appendChild(
+          el("div", { class: "row" },
+
+            // Summary dropdown
+			(() => {
+  const sel = el("select", {
+    onchange: e => {
+      r.summaryId = e.target.value;
+    }
+  });
+
+  // Default
+  sel.appendChild(el("option", { value: "" }, "-- Select Summary --"));
+
+  // Track available IDs
+  const summaryIds = new Set();
+
+  summaries.forEach(s => {
+    summaryIds.add(s.id);
+    sel.appendChild(el("option", { value: s.id }, s.name));
+  });
+
+  // 🔴 HANDLE DELETED / MISSING SUMMARY
+  if (r.summaryId && !summaryIds.has(r.summaryId)) {
+    sel.appendChild(
+      el(
+        "option",
+        {
+          value: r.summaryId
+        },
+        "⚠ Deleted summary"
+      )
+    );
+  }
+
+  // ✅ Always restore value
+  sel.value = r.summaryId ?? "";
+
+  return sel;
+})(),
+
+            // Weight (max 100)
+            el("input", {
+              type: "number",
+              min: 0,
+              max: 100,
+              value: r.weight ?? 0,
+              oninput: e => {
+                r.weight = Math.min(100, Number(e.target.value || 0));
+              }
+            }),
+
+            // Delete
+            el("button", {
+              class: "btn btn-danger btn-xs",
+              onClick: () => {
+                local.splice(idx, 1);
+                render();
+              }
+            }, "Delete")
+          )
+        );
+      });
+    };
+
+    render();
+
+    footer.appendChild(
+      el("button", {
+        class: "btn btn-outline",
+        onClick: () => {
+          local.push({ summaryId: "", weight: 0 });
+          render();
+        }
+      }, "Add")
+    );
+
+    footer.appendChild(
+      el("button", {
+  class: "btn btn-success",
+  onClick: async () => {
+
+    // === VALIDATION ===
+    const used = new Set();
+
+for (let i = 0; i < local.length; i++) {
+  const r = local[i];
+
+  if (!r.summaryId || String(r.summaryId).trim() === "") {
+    toast(`Row ${i + 1}: Please select a summary`);
+    return;
+  }
+
+  if (isNaN(r.weight) || r.weight < 0 || r.weight > 100) {
+    toast(`Row ${i + 1}: Weight must be between 0 and 100`);
+    return;
+  }
+
+  if (used.has(r.summaryId)) {
+    toast(`Row ${i + 1}: Duplicate summary selected`);
+    return;
+  }
+
+  used.add(r.summaryId);
+}
+
+
+    // === SAVE ===
+    await updateDoc(doc(db, "scenarioConfigs", cfg.id), {
+      summaryWeights: local
+    });
+	
+	closeModal();
+	
+    await loadConfigs();
+	renderConfigCards();
+	findScenarioInitialized = false;
+    closeModal();
+    toast("Summary weights saved");
+  }
+}, "Save")
+    );
+  });
 }
 function prefillAddScenarioFromConfig(cfg){
 document.querySelector('.tab[data-tab="addview"]').click();
@@ -2440,6 +2907,9 @@ async function reloadAll(){
 try {
 await Promise.all([loadConfigs(), loadScenarios()]);
 renderConfigCards();
+ if (state.configs.length && document.querySelector('.tab.active')?.dataset.tab === "findscenario") {
+    loadFindScenario();
+  }
 renderDay();
 populateReportCategories();
 } catch (error) {
@@ -2454,6 +2924,227 @@ window.togglePassword = function() {
   if (!passField) return;
   passField.type = passField.type === "password" ? "text" : "password";
 };
+/* =====================================================
+   FIND SCENARIO – FINAL ADVANCED VERSION
+   ===================================================== */
+
+let selectedSummaries = new Set();
+let searchMode = "AND";
+let minWeight = 0;
+
+async function loadFindScenario() {
+  if (findScenarioInitialized) return;
+  findScenarioInitialized = true;
+  
+  selectedSummaries.clear();
+  document.getElementById("findSummaryList").innerHTML = "";
+  document.getElementById("findScenarioResults").innerHTML = "";
+
+  bindToolbar();
+  loadSavedSearches();
+
+  const sumSnap = await getDocs(COL_SUMMARY);
+  sumSnap.docs.forEach(d => renderSummaryRow(d.id, d.data().name));
+}
+
+function bindToolbar() {
+  document.getElementById("modeAND").onclick = () => setMode("AND");
+  document.getElementById("modeOR").onclick  = () => setMode("OR");
+
+  document.getElementById("minWeight").oninput = e => {
+    minWeight = Number(e.target.value);
+    document.getElementById("mwVal").textContent = minWeight;
+    searchScenarios();
+  };
+
+  document.getElementById("btnSaveSearch").onclick = saveSearch;
+}
+
+function setMode(m) {
+  searchMode = m;
+  document.getElementById("modeAND").classList.toggle("active", m==="AND");
+  document.getElementById("modeOR").classList.toggle("active", m==="OR");
+  searchScenarios();
+}
+
+function renderSummaryRow(id, name, weight = 0) {
+  const chip = document.createElement("div");
+  chip.className = "summary-chip";
+
+  chip.innerHTML = `
+    <div class="summary-left">
+      <span class="summary-dot"></span>
+      <span class="summary-text">${name}</span>
+    </div>
+
+    <div class="summary-bar">
+      <span style="width:${weight}%"></span>
+    </div>
+  `;
+
+  chip.onclick = () => {
+    if (selectedSummaries.has(id)) {
+      selectedSummaries.delete(id);
+      chip.classList.remove("active");
+    } else {
+      selectedSummaries.add(id);
+      chip.classList.add("active");
+    }
+
+    searchScenarios();
+  };
+
+  document.getElementById("findSummaryList").appendChild(chip);
+}
+
+async function searchScenarios() {
+  const out = document.getElementById("findScenarioResults");
+  out.innerHTML = "";
+
+  if (!selectedSummaries.size) return;
+
+  const cfgSnap = await getDocs(COL_CONFIGS);
+  const matches = [];
+
+  cfgSnap.docs.forEach(d => {
+    const cfg = d.data();
+    const weights = cfg.summaryWeights || [];
+
+    let total = 0;
+    let hits = 0;
+
+    selectedSummaries.forEach(sid => {
+      const f = weights.find(w => w.summaryId === sid);
+      if (f) {
+        total += Number(f.weight);
+        hits++;
+      }
+    });
+
+    const ok =
+      searchMode === "AND"
+        ? hits === selectedSummaries.size
+        : hits > 0;
+
+    if (ok && total >= minWeight) {
+      matches.push({ id:d.id, title: cfg.title, weight: total });
+    }
+  });
+
+  matches.sort((a,b)=>b.weight-a.weight);
+
+  matches.forEach(m => {
+    const card = document.createElement("div");
+    card.className = "find-card";
+    card.innerHTML = `
+      <strong>${m.title}</strong>
+      <div>${m.weight}%</div>
+      <div class="heat-bar" style="width:${m.weight}%"></div>
+    `;
+    card.onclick = () => openEditConfigModal({ id:m.id });
+    out.appendChild(card);
+  });
+}
+
+/* ===== SAVE / LOAD SEARCH ===== */
+
+function saveSearch() {
+  const saved = JSON.parse(localStorage.getItem("findSearches") || "[]");
+  saved.push({
+    summaries: [...selectedSummaries],
+    mode: searchMode,
+    minWeight
+  });
+  localStorage.setItem("findSearches", JSON.stringify(saved));
+  loadSavedSearches();
+}
+
+function loadSavedSearches() {
+  const box = document.getElementById("savedSearches");
+  box.innerHTML = "";
+
+  const saved = JSON.parse(localStorage.getItem("findSearches") || "[]");
+
+  saved.forEach((s, idx) => {   // ✅ idx added here
+    const div = document.createElement("div");
+    div.className = "saved-search";
+
+    const label = document.createElement("div");
+    label.textContent = `${s.mode} | Min ${s.minWeight}% | ${s.summaries.length} summaries`;
+
+    const del = el("span", {
+      class: "saved-search-delete",
+      onClick: e => {
+        e.stopPropagation();   // ✅ correct
+        saved.splice(idx, 1);  // ✅ now idx exists
+        localStorage.setItem("findSearches", JSON.stringify(saved));
+        loadSavedSearches();
+        toast("Saved search deleted");
+      }
+    }, "✕");
+
+    div.append(label, del);
+
+    div.onclick = () => {
+      selectedSummaries = new Set(s.summaries);
+      searchMode = s.mode;
+      minWeight = s.minWeight;
+      document.getElementById("minWeight").value = minWeight;
+      document.getElementById("mwVal").textContent = minWeight;
+      setMode(searchMode);
+      loadFindScenario();
+    };
+
+    box.appendChild(div);
+  });
+}
+
+/* TAB HOOK */
+document
+  .querySelector('.tab[data-tab="findscenario"]')
+  ?.addEventListener("click", loadFindScenario);
+
+/* =====================================================
+   GLOBAL EVENT DELEGATION (CRITICAL FIX)
+   ===================================================== */
+
+document.body.addEventListener("click", e => {
+
+  // Manage Summary Points
+  if (e.target.id === "btnManageSummary") {
+    openSummaryMaster();
+    return;
+  }
+
+  // Summary & Weight button (per config card)
+  if (e.target.dataset?.action === "summary-weight") {
+    const cfgId = e.target.dataset.id;
+    const cfg = state.configs.find(c => c.id === cfgId);
+    if (cfg) openSummaryWeightModal(cfg);
+    return;
+  }
+
+});
+// ✅ FIX: Saved Search delete (event delegation)
+document.getElementById("savedSearches").addEventListener("click", function (e) {
+
+  // If delete (X) clicked
+  if (e.target.classList.contains("saved-search-delete")) {
+    e.stopPropagation();
+
+    const id = e.target.dataset.id;
+    if (!id) return;
+
+    let saved = JSON.parse(localStorage.getItem("savedSearches") || "[]");
+    saved = saved.filter(s => s.id !== id);
+
+    localStorage.setItem("savedSearches", JSON.stringify(saved));
+
+    loadFindScenario(); // refresh UI
+    toast("Saved search deleted");
+  }
+
+});
 </script>
 </body>
 </html>
