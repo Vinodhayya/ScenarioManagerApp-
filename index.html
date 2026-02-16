@@ -1242,8 +1242,8 @@ table td, table th {
 
 .find-advanced-grid {
   display: grid;
-  grid-template-columns: 360px 1fr;
-  gap: 24px;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
   align-items: start;
 }
 
@@ -3056,12 +3056,7 @@ const summaries = sumSnap.docs
 
 // render
 summaries.forEach(s =>
-  renderSummaryRow(
-  s.id,
-  s.name,
-  s.weight ?? 0,
-  Number.isFinite(s.displayOrder) ? s.displayOrder : 9999
-)
+  renderSummaryRow(s.id, s.name, s.weight ?? 0)
 );
 }
 function updateSummaryUI() {
@@ -3141,11 +3136,10 @@ function setMode(m) {
   document.getElementById("modeOR").classList.toggle("active", m==="OR");
   searchScenarios();
 }
-function renderSummaryRow(id, name, weight = 0, displayOrder = 9999) {
+
+function renderSummaryRow(id, name, weight = 0) {
   const chip = document.createElement("div");
-  chip.dataset.order = Number.isFinite(weight) ? weight : 9999;
   chip.className = "summary-chip";
-  chip.dataset.order = displayOrder;
 
   // 🔍 for search
   chip.dataset.id = id;
@@ -3163,42 +3157,15 @@ function renderSummaryRow(id, name, weight = 0, displayOrder = 9999) {
   `;
 
   chip.onclick = () => {
-  const list = document.getElementById("findSummaryList");
-
-  if (selectedSummaries.has(id)) {
-    // ❌ DESELECT
-    selectedSummaries.delete(id);
-    chip.classList.remove("active");
-
-    // 🔁 restore original order
-    const order = Number(chip.dataset.order);
-
-    const siblings = [...list.children].filter(
-      el => el !== chip && !selectedSummaries.has(el.dataset.id)
-    );
-
-    const insertBefore = siblings.find(
-      el => Number(el.dataset.order) > order
-    );
-
-    if (insertBefore) {
-      list.insertBefore(chip, insertBefore);
+    if (selectedSummaries.has(id)) {
+      selectedSummaries.delete(id);
+      chip.classList.remove("active");
     } else {
-      list.appendChild(chip);
+      selectedSummaries.add(id);
+      chip.classList.add("active");
     }
-
-  } else {
-    // ✅ SELECT
-    selectedSummaries.add(id);
-    chip.classList.add("active");
-
-    // 🔥 move selected to top
-    list.prepend(chip);
-  }
-
-  searchScenarios();
-};
-
+    searchScenarios();
+  };
 
   document.getElementById("findSummaryList").appendChild(chip);
 }
