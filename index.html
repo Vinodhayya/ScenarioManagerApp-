@@ -1238,6 +1238,84 @@ table td, table th {
     gap: 24px;
   }
 }
+/* === FIND SCENARIO : ADVANCED SPLIT UI === */
+
+.find-advanced-grid {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* SUMMARY PANEL */
+.summary-panel {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 26px rgba(0,0,0,.08);
+  height: calc(100vh - 260px);
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-search {
+  flex: 1;
+}
+
+.summary-scroll {
+  overflow-y: auto;
+  display: grid;
+  gap: 10px;
+}
+
+/* CHIP */
+.summary-chip {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-chip:hover {
+  background: #eef2ff;
+}
+
+.summary-chip.active {
+  background: linear-gradient(135deg,#6366f1,#818cf8);
+  color: #fff;
+  border-color: transparent;
+}
+
+/* RESULTS PANEL */
+.results-panel {
+  position: sticky;
+  top: 20px;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 12px 30px rgba(0,0,0,.1);
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+}
+
+/* MOBILE */
+@media (max-width: 900px) {
+  .find-advanced-grid {
+    grid-template-columns: 1fr;
+  }
+  .results-panel {
+    position: relative;
+    max-height: unset;
+  }
+}
 </style>
 </head>
 <body>
@@ -1348,16 +1426,38 @@ table td, table th {
     <button class="btn btn-outline" id="btnSaveSearch">Save Search</button>
   </div>
 
-  <div class="find-grid">
-    <div id="findSummaryList"></div>
-    <div>
-      <h4>Results</h4>
-      <div id="findScenarioResults"></div>
+  <div class="find-advanced-grid">
 
-      <h4>Saved Searches</h4>
-      <div id="savedSearches"></div>
-    </div>
+  <!-- SUMMARY PANEL -->
+  <div class="summary-panel">
+
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input
+        id="summarySearch"
+        class="summary-search"
+        placeholder="Search summary points..."
+      />
+      <button
+        class="btn btn-outline btn-xs"
+        id="btnClearSummary"
+      >
+        Clear
+      </button>
+   </div>
+
+    <div id="findSummaryList" class="summary-scroll"></div>
   </div>
+
+  <!-- RESULTS PANEL (FREEZED) -->
+  <div class="results-panel">
+    <h4>Results</h4>
+    <div id="findScenarioResults"></div>
+
+    <h4 style="margin-top:16px">Saved Searches</h4>
+    <div id="savedSearches"></div>
+  </div>
+
+</div>
 </section>
 <!-- CONFIG -->
 <section id="tab-config" class="hidden">
@@ -2944,9 +3044,49 @@ async function loadFindScenario() {
   loadSavedSearches();
 
   const sumSnap = await getDocs(COL_SUMMARY);
-  sumSnap.docs.forEach(d => renderSummaryRow(d.id, d.data().name));
+
+// 🔥 SORT BY displayOrder (LOW → HIGH)
+const summaries = sumSnap.docs
+  .map(d => ({ id: d.id, ...d.data() }))
+  .sort((a, b) => {
+    const da = Number.isFinite(a.displayOrder) ? a.displayOrder : 9999;
+    const db = Number.isFinite(b.displayOrder) ? b.displayOrder : 9999;
+    return da - db;
+  });
+
+// render
+summaries.forEach(s =>
+  renderSummaryRow(
+  s.id,
+  s.name,
+  s.weight ?? 0,
+  Number.isFinite(s.displayOrder) ? s.displayOrder : 9999
+)
+);
+}
+function updateSummaryUI() {
+  document.querySelectorAll(".summary-chip").forEach(c => {
+    c.classList.toggle(
+      "active",
+      selectedSummaries.has(c.dataset.id)
+    );
+  });
 }
 
+/* CLEAR BUTTON */
+document.getElementById("btnClearSummary").onclick = () => {
+  selectedSummaries.clear();
+  updateSummaryUI();
+  applyFindScenarioFilter();
+};
+
+/* SEARCH */
+document.getElementById("summarySearch").addEventListener("input", e => {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll(".summary-chip").forEach(c => {
+    c.style.display = c.dataset.name.includes(q) ? "" : "none";
+  });
+});
 function bindToolbar() {
   document.getElementById("modeAND").onclick = () => setMode("AND");
   document.getElementById("modeOR").onclick  = () => setMode("OR");
@@ -2958,7 +3098,42 @@ function bindToolbar() {
   };
 
   document.getElementById("btnSaveSearch").onclick = saveSearch;
+  
+  document.getElementById("btnClearSummary").onclick = () => {
+  selectedSummaries.clear();
+
+  document.querySelectorAll(".summary-chip").forEach(c =>
+    c.classList.remove("active")
+  );
+
+  document.getElementById("findScenarioResults").innerHTML = "";
+};
 }
+document.getElementById("summarySearch")?.addEventListener("input", e => {
+  const q = e.target.value.toLowerCase();
+
+  document.querySelectorAll(".summary-chip").forEach(chip => {
+    chip.style.display =
+      chip.dataset.name.includes(q) ? "" : "none";
+  });
+});
+document.getElementById("summarySearch")?.addEventListener("input", e => {
+  const q = e.target.value.toLowerCase();
+
+  document.querySelectorAll(".summary-chip").forEach(chip => {
+    chip.style.display =
+      chip.dataset.name.includes(q) ? "" : "none";
+  });
+});
+
+document.getElementById("summarySearch")?.addEventListener("input", e => {
+  const q = e.target.value.toLowerCase();
+
+  document.querySelectorAll(".summary-chip").forEach(chip => {
+    chip.style.display =
+      chip.dataset.name.includes(q) ? "" : "none";
+  });
+});
 
 function setMode(m) {
   searchMode = m;
@@ -2966,10 +3141,15 @@ function setMode(m) {
   document.getElementById("modeOR").classList.toggle("active", m==="OR");
   searchScenarios();
 }
-
-function renderSummaryRow(id, name, weight = 0) {
+function renderSummaryRow(id, name, weight = 0, displayOrder = 9999) {
   const chip = document.createElement("div");
+  chip.dataset.order = Number.isFinite(weight) ? weight : 9999;
   chip.className = "summary-chip";
+  chip.dataset.order = displayOrder;
+
+  // 🔍 for search
+  chip.dataset.id = id;
+  chip.dataset.name = name.toLowerCase();
 
   chip.innerHTML = `
     <div class="summary-left">
@@ -2983,16 +3163,42 @@ function renderSummaryRow(id, name, weight = 0) {
   `;
 
   chip.onclick = () => {
-    if (selectedSummaries.has(id)) {
-      selectedSummaries.delete(id);
-      chip.classList.remove("active");
+  const list = document.getElementById("findSummaryList");
+
+  if (selectedSummaries.has(id)) {
+    // ❌ DESELECT
+    selectedSummaries.delete(id);
+    chip.classList.remove("active");
+
+    // 🔁 restore original order
+    const order = Number(chip.dataset.order);
+
+    const siblings = [...list.children].filter(
+      el => el !== chip && !selectedSummaries.has(el.dataset.id)
+    );
+
+    const insertBefore = siblings.find(
+      el => Number(el.dataset.order) > order
+    );
+
+    if (insertBefore) {
+      list.insertBefore(chip, insertBefore);
     } else {
-      selectedSummaries.add(id);
-      chip.classList.add("active");
+      list.appendChild(chip);
     }
 
-    searchScenarios();
-  };
+  } else {
+    // ✅ SELECT
+    selectedSummaries.add(id);
+    chip.classList.add("active");
+
+    // 🔥 move selected to top
+    list.prepend(chip);
+  }
+
+  searchScenarios();
+};
+
 
   document.getElementById("findSummaryList").appendChild(chip);
 }
